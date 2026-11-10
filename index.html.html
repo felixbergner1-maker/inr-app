@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="INR+">
+  <meta name="theme-color" content="#2563eb">
+  <title>INR+ Tagebuch</title>
+
+  <script>
+    (function() {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        var ctx = canvas.getContext('2d');
+        var grad = ctx.createLinearGradient(0, 0, 512, 512);
+        grad.addColorStop(0, '#1e40af');
+        grad.addColorStop(1, '#2563eb');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 165px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('INR+', 256, 268);
+
+        var iconUrl = canvas.toDataURL('image/png');
+
+        var link = document.createElement('link');
+        link.rel = 'apple-touch-icon';
+        link.href = iconUrl;
+        document.head.appendChild(link);
+
+        var fav = document.createElement('link');
+        fav.rel = 'icon';
+        fav.type = 'image/png';
+        fav.href = iconUrl;
+        document.head.appendChild(fav);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #cbd5e1;
+      color: #0f172a;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      background-color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0,0,0,0.15);
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e40af, #2563eb);
+      color: white;
+      padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-icon {
+      background: white;
+      color: #2563eb;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .target-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Oberer Umschalter als zusätzliche Sicherheit auf dem iPhone */
+    .top-switcher {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 6px;
+      margin: 14px 18px 0 18px;
+      border-radius: 14px;
+    }
+
+    .switch-pill {
+      border: none;
+      background: transparent;
+      padding: 10px 8px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .switch-pill.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    main {
+      flex: 1;
+      padding: 16px 18px;
+      padding-bottom: calc(115px + env(safe-area-inset-bottom, 20px));
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.6px;
+      margin-bottom: 12px;
+    }
+
+    .inr-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 0 14px 0;
+    }
+
+    .circle-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      border: none;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .circle-btn:active {
+      background: #dbeafe;
+      transform: scale(0.95);
+    }
+
+    .inr-center {
+      text-align: center;
+    }
+
+    .inr-big-input {
+      font-size: 52px;
+      font-weight: 800;
+      width: 135px;
+      text-align: center;
+      border: none;
+      background: transparent;
+      color: #0f172a;
+      outline: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .ok { background: #dcfce7; color: #15803d; }
+    .low { background: #ffedd5; color: #c2410c; }
+    .high { background: #fee2e2; color: #b91c1c; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 16px;
+      background: #f8fafc;
+      color: #0f172a;
+      outline: none;
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+      touch-action: manipulation;
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat-box {
+      background: white;
+      padding: 14px 10px;
+      border-radius: 14px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .stat-title { font-size: 11px; color: #64748b; font-weight: 600; }
+    .stat-val { font-size: 20px; font-weight: 800; margin-top: 4px; }
+
+    .log-item {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .log-left { display: flex; align-items: center; gap: 14px; }
+    .log-inr {
+      font-size: 21px;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 12px;
+      min-width: 62px;
+      text-align: center;
+    }
+
+    .log-date { font-weight: 700; font-size: 15px; }
+    .log-sub { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+    .del-btn {
+      border: none;
+      background: #f1f5f9;
+      color: #64748b;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Untere Navigation mit Sicherheitsabstand für den iPhone-Home-Balken */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-top: 1px solid #cbd5e1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 16px)) 16px;
+      z-index: 999;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+    }
+
+    .tab-btn {
+      border: none;
+      background: #f8fafc;
+      padding: 13px 10px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .tab-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-bg.open { display: flex; }
+    .modal-card {
+      background: white;
+      width: 100%;
+      max-width: 350px;
+      border-radius: 20px;
+      padding: 22px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 85px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 1001;
+    }
+    .toast.show { opacity: 1; }
+
+    .warning-banner {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .disclaimer {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">+</div>
+      <span>INR+</span>
+    </div>
+    <button type="button" class="target-pill" id="targetBtn" onclick="openModal()">Ziel: 2,0 – 3,0</button>
+  </header>
+
+  <!-- ZUSÄTZLICHER UMSCHALTER OBEN (falls unten der iPhone-Balken im Weg ist) -->
+  <div class="top-switcher">
+    <button type="button" class="switch-pill active" id="topAdd" onclick="showScreen('add')">1. Messung eintragen</button>
+    <button type="button" class="switch-pill" id="topLog" onclick="showScreen('log')">2. Tagebuch (<span id="topCountSpan">0</span>)</button>
+  </div>
+
+  <div id="toast" class="toast">Messung gespeichert!</div>
+
+  <main>
+    <div id="storageWarning" class="warning-banner">
+      <strong>Achtung:</strong> Dein iPhone blockiert gerade das dauerhafte Speichern (z.B. wegen „Privates Surfen“ oder Dateivorschau). Bitte öffne den Link im normalen Safari-Modus!
+    </div>
+
+    <!-- SCREEN 1: MESSUNG EINTRAGEN -->
+    <div id="screen-add" class="screen active">
+      <div class="card">
+        <div class="card-label">1. INR-Messwert eingeben</div>
+        <div class="inr-control">
+          <button type="button" class="circle-btn" onclick="stepInr(-0.1)">−</button>
+          <div class="inr-center">
+            <input type="text" inputmode="decimal" id="inrVal" class="inr-big-input" value="2,5" oninput="checkStatus()">
+            <div><span id="statusBadge" class="badge ok">Im Zielbereich</span></div>
+          </div>
+          <button type="button" class="circle-btn" onclick="stepInr(0.1)">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">2. Zeitpunkt & Wochendosis</div>
+        <div class="grid-2">
+          <div>
+            <label>Datum</label>
+            <input type="date" id="dateVal">
+          </div>
+          <div>
+            <label>Uhrzeit</label>
+            <input type="time" id="timeVal">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Wochendosis</label>
+            <input type="text" inputmode="decimal" id="doseVal" placeholder="z.B. 5,5">
+          </div>
+          <div>
+            <label>Einheit</label>
+            <select id="unitVal">
+              <option value="Tabl./Woche">Tabletten</option>
+              <option value="mg/Woche">Milligramm (mg)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label>Notiz (optional)</label>
+          <input type="text" id="noteVal" placeholder="z.B. Selbstmessung, Befinden...">
+        </div>
+
+        <button type="button" class="primary-btn" onclick="saveMeasurement()">Messung ins Tagebuch speichern</button>
+      </div>
+
+      <p class="disclaimer">
+        Hinweis: INR+ dient ausschließlich als persönliches Dokumentationstagebuch und gibt keine Dosierungsempfehlungen.
+      </p>
+    </div>
+
+    <!-- SCREEN 2: TAGEBUCH -->
+    <div id="screen-log" class="screen">
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-title">Letzter Wert</div>
+          <div class="stat-val" id="sLast">–</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-title">Ø Schnitt</div>
+          <div class="stat-val" id="sAvg">–</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-title">Im Ziel</div>
+          <div class="stat-val" id="sTarget" style="color:#15803d;">–</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <button type="button" class="primary-btn" style="background:#eff6ff; color:#2563eb; box-shadow:none; border:1px solid #bfdbfe; padding:12px;" onclick="showScreen('add')">
+          ＋ Neue Messung eintragen
+        </button>
+      </div>
+
+      <div class="card-label" style="margin-left: 4px;">Gespeicherte Messungen</div>
+      <div id="logContainer"></div>
+
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-label">Datensicherung (Backup auf dem Gerät)</div>
+        <div class="grid-2" style="margin-bottom: 0;">
+          <button type="button" class="target-pill" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:12px;" onclick="exportBackup()">
+            💾 Daten sichern
+          </button>
+          <button type="button" class="target-pill" style="background:#f8fafc; color:#475569; border:1px solid #cbd5e1; padding:12px;" onclick="document.getElementById('importFile').click()">
+            📂 Backup laden
+          </button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+    </div>
+  </main>
+
+  <nav>
+    <button type="button" class="tab-btn active" id="tAdd" onclick="showScreen('add')">＋ Messung</button>
+    <button type="button" class="tab-btn" id="tLog" onclick="showScreen('log')">📖 Tagebuch (<span id="countSpan">0</span>)</button>
+  </nav>
+</div>
+
+<!-- ZIELWERT MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal-card">
+    <h3 style="margin-bottom: 14px;">Persönlicher Zielbereich</h3>
+    <div class="grid-2">
+      <div>
+        <label>Min. INR</label>
+        <input type="text" inputmode="decimal" id="minInr" value="2,0">
+      </div>
+      <div>
+        <label>Max. INR</label>
+        <input type="text" inputmode="decimal" id="maxInr" value="3,0">
+      </div>
+    </div>
+    <button type="button" class="primary-btn" onclick="saveTarget()">Speichern</button>
+  </div>
+</div>
+
+<script>
+  var logs = [];
+  var target = { min: 2.0, max: 3.0 };
+
+  // Hilfsfunktion: Wandelt deutsche Kommas ("2,5") sicher in Dezimalzahlen (2.5) um
+  function parseGermanFloat(str, fallback) {
+    if (str === undefined || str === null) return fallback;
+    var cleaned = String(str).replace(',', '.').trim();
+    var num = parseFloat(cleaned);
+    return isNaN(num) ? fallback : num;
+  }
+
+  // Sicherer Speicher-Zugriff (verhindert Abstürze auf dem iPhone + Cookie-Backup)
+  function saveData(key, obj) {
+    var json = JSON.stringify(obj);
+    try {
+      localStorage.setItem(key, json);
+    } catch (e) {
+      document.getElementById('storageWarning').style.display = 'block';
+    }
+    try {
+      window.name = JSON.stringify({ logs: logs, target: target });
+      document.cookie = key + "=" + encodeURIComponent(json) + "; max-age=31536000; path=/; SameSite=Lax";
+    } catch (e) {}
+  }
+
+  function loadData(key, fallback) {
+    try {
+      var val = localStorage.getItem(key);
+      if (val) return JSON.parse(val);
+    } catch (e) {
+      document.getElementById('storageWarning').style.display = 'block';
+    }
+    try {
+      var match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
+      if (match) return JSON.parse(decodeURIComponent(match[2]));
+    } catch (e) {}
+    try {
+      if (window.name) {
+        var wn = JSON.parse(window.name);
+        if (key === 'inr_logs' && wn.logs) return wn.logs;
+        if (key === 'inr_target' && wn.target) return wn.target;
+      }
+    } catch (e) {}
+    return fallback;
+  }
+
+  function init() {
+    logs = loadData('inr_logs', []);
+    target = loadData('inr_target', { min: 2.0, max: 3.0 });
+
+    if (navigator.storage && navigator.storage.persist) {
+      try { navigator.storage.persist(); } catch (e) {}
+    }
+
+    var now = new Date();
+    var yyyy = now.getFullYear();
+    var mm = String(now.getMonth() + 1).padStart(2, '0');
+    var dd = String(now.getDate()).padStart(2, '0');
+    var hh = String(now.getHours()).padStart(2, '0');
+    var min = String(now.getMinutes()).padStart(2, '0');
+
+    document.getElementById('dateVal').value = yyyy + '-' + mm + '-' + dd;
+    document.getElementById('timeVal').value = hh + ':' + min;
+
+    updateTargetButton();
+    checkStatus();
+    renderLogs();
+  }
+
+  function stepInr(d) {
+    var el = document.getElementById('inrVal');
+    var current = parseGermanFloat(el.value, 2.0);
+    var v = Math.round((current + d) * 10) / 10;
+    if (v < 0.8) v = 0.8;
+    if (v > 8.0) v = 8.0;
+    el.value = v.toFixed(1).replace('.', ',');
+    checkStatus();
+  }
+
+  function checkStatus() {
+    var v = parseGermanFloat(document.getElementById('inrVal').value, 0);
+    var b = document.getElementById('statusBadge');
+    var minS = target.min.toFixed(1).replace('.', ',');
+    var maxS = target.max.toFixed(1).replace('.', ',');
+
+    if (v >= target.min && v <= target.max) {
+      b.className = 'badge ok';
+      b.textContent = 'Im Zielbereich (' + minS + '–' + maxS + ')';
+    } else if (v < target.min) {
+      b.className = 'badge low';
+      b.textContent = 'Zu niedrig (< ' + minS + ')';
+    } else {
+      b.className = 'badge high';
+      b.textContent = 'Zu hoch (> ' + maxS + ')';
+    }
+  }
+
+  function saveMeasurement() {
+    // Schließt auf dem iPhone sofort die Tastatur, damit die unteren Buttons frei sind
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+
+    var inr = parseGermanFloat(document.getElementById('inrVal').value, 0);
+    var date = document.getElementById('dateVal').value;
+    var time = document.getElementById('timeVal').value || '08:00';
+    var dose = String(document.getElementById('doseVal').value || '').trim();
+    var unit = document.getElementById('unitVal').value;
+    var note = String(document.getElementById('noteVal').value || '').trim();
+
+    if (!inr || !date) {
+      alert('Bitte einen gültigen INR-Wert und ein Datum eingeben.');
+      return;
+    }
+
+    logs.push({
+      id: Date.now(),
+      inr: Math.round(inr * 10) / 10,
+      date: date,
+      time: time,
+      dose: dose,
+      unit: unit,
+      note: note
+    });
+
+    logs.sort(function(a, b) {
+      return String(b.date + b.time).localeCompare(String(a.date + a.time));
+    });
+
+    saveData('inr_logs', logs);
+    document.getElementById('noteVal').value = '';
+    renderLogs();
+    showToast();
+    showScreen('log');
+  }
+
+  function removeLog(id) {
+    logs = logs.filter(function(x) { return x.id !== id; });
+    saveData('inr_logs', logs);
+    renderLogs();
+  }
+
+  function renderLogs() {
+    var box = document.getElementById('logContainer');
+    document.getElementById('countSpan').textContent = logs.length;
+    document.getElementById('topCountSpan').textContent = logs.length;
+
+    if (!logs || logs.length === 0) {
+      box.innerHTML = '<div class="card" style="text-align:center;color:#64748b;">Noch keine Messungen vorhanden.</div>';
+      document.getElementById('sLast').textContent = '–';
+      document.getElementById('sAvg').textContent = '–';
+      document.getElementById('sTarget').textContent = '–';
+      return;
+    }
+
+    var firstInr = Number(logs[0].inr) || 0;
+    document.getElementById('sLast').textContent = firstInr.toFixed(1).replace('.', ',');
+
+    var sum = 0;
+    var inT = 0;
+    for (var i = 0; i < logs.length; i++) {
+      var val = Number(logs[i].inr) || 0;
+      sum += val;
+      if (val >= target.min && val <= target.max) inT++;
+    }
+    var avg = sum / logs.length;
+    document.getElementById('sAvg').textContent = avg.toFixed(1).replace('.', ',');
+    document.getElementById('sTarget').textContent = Math.round((inT / logs.length) * 100) + '%';
+
+    var html = '';
+    for (var j = 0; j < logs.length; j++) {
+      var x = logs[j];
+      var xInr = Number(x.inr) || 0;
+      var cls = 'ok';
+      if (xInr < target.min) cls = 'low';
+      if (xInr > target.max) cls = 'high';
+
+      var d = String(x.date || '').split('-').reverse().join('.');
+      var doseStr = String(x.dose || '').replace('.', ',');
+      var doseTxt = doseStr ? ('Dosis: ' + doseStr + ' ' + (x.unit || '')) : 'Keine Dosis notiert';
+      var noteTxt = x.note ? ('<div style="font-size:12px; color:#64748b; margin-top:2px;">Notiz: ' + x.note + '</div>') : '';
+
+      html += '<div class="log-item">' +
+        '<div class="log-left">' +
+          '<div class="log-inr ' + cls + '">' + xInr.toFixed(1).replace('.', ',') + '</div>' +
+          '<div>' +
+            '<div class="log-date">' + d + ' – ' + (x.time || '') + ' Uhr</div>' +
+            '<div class="log-sub">' + doseTxt + '</div>' +
+            noteTxt +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="del-btn" onclick="removeLog(' + x.id + ')">✕</button>' +
+      '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function showScreen(s) {
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+    var isAdd = (s === 'add');
+    document.getElementById('screen-add').className = isAdd ? 'screen active' : 'screen';
+    document.getElementById('screen-log').className = !isAdd ? 'screen active' : 'screen';
+
+    document.getElementById('tAdd').className = isAdd ? 'tab-btn active' : 'tab-btn';
+    document.getElementById('tLog').className = !isAdd ? 'tab-btn active' : 'tab-btn';
+
+    document.getElementById('topAdd').className = isAdd ? 'switch-pill active' : 'switch-pill';
+    document.getElementById('topLog').className = !isAdd ? 'switch-pill active' : 'switch-pill';
+
+    window.scrollTo(0, 0);
+  }
+
+  function openModal() {
+    document.getElementById('minInr').value = target.min.toFixed(1).replace('.', ',');
+    document.getElementById('maxInr').value = target.max.toFixed(1).replace('.', ',');
+    document.getElementById('modalBg').className = 'modal-bg open';
+  }
+
+  function saveTarget() {
+    var minV = parseGermanFloat(document.getElementById('minInr').value, 2.0);
+    var maxV = parseGermanFloat(document.getElementById('maxInr').value, 3.0);
+    target.min = Math.min(minV, maxV);
+    target.max = Math.max(minV, maxV);
+    saveData('inr_target', target);
+    document.getElementById('modalBg').className = 'modal-bg';
+    updateTargetButton();
+    checkStatus();
+    renderLogs();
+  }
+
+  function updateTargetButton() {
+    document.getElementById('targetBtn').textContent =
+      'Ziel: ' + target.min.toFixed(1).replace('.', ',') + ' – ' + target.max.toFixed(1).replace('.', ',');
+  }
+
+  function showToast() {
+    var t = document.getElementById('toast');
+    t.className = 'toast show';
+    setTimeout(function() { t.className = 'toast'; }, 2000);
+  }
+
+  function exportBackup() {
+    var data = JSON.stringify({ logs: logs, target: target }, null, 2);
+    var blob = new Blob([data], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'inr-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importBackup(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var imported = JSON.parse(e.target.result);
+        if (imported.logs) {
+          logs = imported.logs;
+          saveData('inr_logs', logs);
+        }
+        if (imported.target) {
+          target = imported.target;
+          saveData('inr_target', target);
+        }
+        updateTargetButton();
+        checkStatus();
+        renderLogs();
+        alert('Backup erfolgreich wiederhergestellt!');
+      } catch (err) {
+        alert('Fehler beim Lesen der Backup-Datei.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  init();
+</script>
+</body>
+</html>
